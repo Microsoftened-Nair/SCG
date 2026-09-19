@@ -12,6 +12,7 @@ __all__ = [
     "RepositoryScanReport",
     "SemVerString",
     "SeverityLevel",
+    "SignalSource",
     "TrustScoreBreakdown",
     "VersionParseStatus",
     "VulnerabilityRecord",

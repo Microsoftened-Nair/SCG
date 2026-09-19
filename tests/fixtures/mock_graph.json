@@ -1,0 +1,109 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "pkg:scg/target-app@1.0.0",
+      "name": "target-app",
+      "version": "1.0.0",
+      "ecosystem": "npm",
+      "is_direct": false,
+      "depth": 0,
+      "scope": "PROD"
+    },
+    {
+      "id": "pkg:npm/express@4.18.2",
+      "name": "express",
+      "version": "4.18.2",
+      "ecosystem": "npm",
+      "is_direct": true,
+      "depth": 1,
+      "scope": "PROD"
+    },
+    {
+      "id": "pkg:npm/lodash@4.17.20",
+      "name": "lodash",
+      "version": "4.17.20",
+      "ecosystem": "npm",
+      "is_direct": true,
+      "depth": 1,
+      "scope": "PROD"
+    },
+    {
+      "id": "pkg:npm/body-parser@1.20.1",
+      "name": "body-parser",
+      "version": "1.20.1",
+      "ecosystem": "npm",
+      "is_direct": true,
+      "depth": 1,
+      "scope": "PROD"
+    },
+    {
+      "id": "pkg:npm/debug@2.6.9",
+      "name": "debug",
+      "version": "2.6.9",
+      "ecosystem": "npm",
+      "is_direct": false,
+      "depth": 2,
+      "scope": "PROD"
+    },
+    {
+      "id": "pkg:npm/jest@29.7.0",
+      "name": "jest",
+      "version": "29.7.0",
+      "ecosystem": "npm",
+      "is_direct": true,
+      "depth": 1,
+      "scope": "DEV"
+    },
+    {
+      "id": "pkg:npm/pretty-format@29.7.0",
+      "name": "pretty-format",
+      "version": "29.7.0",
+      "ecosystem": "npm",
+      "is_direct": false,
+      "depth": 2,
+      "scope": "DEV"
+    },
+    {
+      "id": "pkg:npm/isolated-leaf@1.0.0",
+      "name": "isolated-leaf",
+      "version": "1.0.0",
+      "ecosystem": "npm",
+      "is_direct": false,
+      "depth": null,
+      "scope": "PROD"
+    }
+  ],
+  "edges": [
+    {
+      "source": "pkg:scg/target-app@1.0.0",
+      "target": "pkg:npm/express@4.18.2"
+    },
+    {
+      "source": "pkg:scg/target-app@1.0.0",
+      "target": "pkg:npm/lodash@4.17.20"
+    },
+    {
+      "source": "pkg:scg/target-app@1.0.0",
+      "target": "pkg:npm/body-parser@1.20.1"
+    },
+    {
+      "source": "pkg:scg/target-app@1.0.0",
+      "target": "pkg:npm/jest@29.7.0"
+    },
+    {
+      "source": "pkg:npm/express@4.18.2",
+      "target": "pkg:npm/body-parser@1.20.1"
+    },
+    {
+      "source": "pkg:npm/body-parser@1.20.1",
+      "target": "pkg:npm/debug@2.6.9"
+    },
+    {
+      "source": "pkg:npm/jest@29.7.0",
+      "target": "pkg:npm/pretty-format@29.7.0"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "pkg:npm/express@4.18.2": {
+    "purl": "pkg:npm/express@4.18.2",
+    "reachability": "DIRECT_IMPORTED",
+    "exposure_factor": 1.0,
+    "symbol_confirmed_reachable": false,
+    "call_sites": [
+      {
+        "file": "src/app.js",
+        "line": 5,
+        "symbol": "express"
+      }
+    ]
+  },
+  "pkg:npm/lodash@4.17.20": {
+    "purl": "pkg:npm/lodash@4.17.20",
+    "reachability": "DIRECT_IMPORTED",
+    "exposure_factor": 1.0,
+    "symbol_confirmed_reachable": true,
+    "call_sites": [
+      {
+        "file": "src/app.js",
+        "line": 42,
+        "symbol": "template"
+      }
+    ]
+  },
+  "pkg:npm/body-parser@1.20.1": {
+    "purl": "pkg:npm/body-parser@1.20.1",
+    "reachability": "DIRECT_IMPORTED",
+    "exposure_factor": 0.8,
+    "symbol_confirmed_reachable": false,
+    "call_sites": [
+      {
+        "file": "src/app.js",
+        "line": 8,
+        "symbol": "json"
+      }
+    ]
+  },
+  "pkg:npm/debug@2.6.9": {
+    "purl": "pkg:npm/debug@2.6.9",
+    "reachability": "TRANSITIVE_REQUIRED",
+    "exposure_factor": 0.5,
+    "symbol_confirmed_reachable": false,
+    "call_sites": []
+  },
+  "pkg:npm/jest@29.7.0": {
+    "purl": "pkg:npm/jest@29.7.0",
+    "reachability": "DEV_DEPENDENCY",
+    "exposure_factor": 0.1,
+    "symbol_confirmed_reachable": false,
+    "call_sites": []
+  },
+  "pkg:npm/pretty-format@29.7.0": {
+    "purl": "pkg:npm/pretty-format@29.7.0",
+    "reachability": "DEV_DEPENDENCY",
+    "exposure_factor": 0.1,
+    "symbol_confirmed_reachable": false,
+    "call_sites": []
+  },
+  "pkg:npm/isolated-leaf@1.0.0": {
+    "purl": "pkg:npm/isolated-leaf@1.0.0",
+    "reachability": "UNREFERENCED_LATENT",
+    "exposure_factor": 0.2,
+    "symbol_confirmed_reachable": false,
+    "call_sites": []
+  }
+}

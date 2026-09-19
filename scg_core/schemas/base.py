@@ -118,6 +118,19 @@ class VersionParseStatus(str, Enum):
     UNPARSEABLE = "UNPARSEABLE"
 
 
+class SignalSource(str, Enum):
+    """Provenance or ingestion source for health and metadata signals."""
+
+    REGISTRY_API = "REGISTRY_API"
+    OPENSSF_SCORECARD = "OPENSSF_SCORECARD"
+    OSV_API = "OSV_API"
+    GITHUB_API = "GITHUB_API"
+    UNAVAILABLE_404 = "UNAVAILABLE_404"
+    CACHED = "CACHED"
+    INFERRED = "INFERRED"
+    ABSENT = "ABSENT"
+
+
 class VulnerabilityRecord(BaseModel):
     """Vulnerability advisory record with CVSS, EPSS, CISA KEV, and symbol impact."""
 
@@ -214,8 +227,8 @@ class PackageHealthData(BaseModel):
         ...,
         description="Timestamp of the most recent activity or release on the registry in UTC.",
     )
-    maintainer_count: int = Field(
-        ...,
+    maintainer_count: Optional[int] = Field(
+        default=None,
         ge=1,
         description="Count of active maintainers registered for the package.",
     )
@@ -237,6 +250,10 @@ class PackageHealthData(BaseModel):
     is_deprecated: bool = Field(
         default=False,
         description="Flag indicating if the package or version is formally deprecated upstream.",
+    )
+    signal_sources: Dict[str, SignalSource] = Field(
+        default_factory=dict,
+        description="Mapping of health signals to their ingestion provenance sources.",
     )
 
     @field_validator("openssf_scorecard_score", mode="after")

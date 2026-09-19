@@ -1,0 +1,175 @@
+{
+  "pkg:npm/lodash@4.17.20": {
+    "purl": "pkg:npm/lodash@4.17.20",
+    "vulnerabilities": [
+      {
+        "id": "GHSA-p6mc-m468-83gw",
+        "aliases": [
+          "CVE-2020-28500"
+        ],
+        "summary": "Prototype Pollution in lodash",
+        "cvss_score": 7.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+        "cvss_source": "PUBLISHED_VECTOR",
+        "severity": "HIGH",
+        "epss_score": 0.45,
+        "epss_percentile": 0.95,
+        "is_known_exploited": false,
+        "published": "2020-10-27T00:00:00Z",
+        "withdrawn": null,
+        "fixed_versions": [
+          "4.17.21"
+        ],
+        "vulnerable_version_ranges": [
+          "< 4.17.21"
+        ],
+        "vulnerable_symbols": [
+          "template"
+        ]
+      }
+    ],
+    "health": {
+      "published_date": "2020-08-13T00:00:00Z",
+      "last_registry_activity": "2021-02-20T00:00:00Z",
+      "maintainer_count": null,
+      "weekly_downloads": 45000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 6.2,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "ABSENT",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/express@4.18.2": {
+    "purl": "pkg:npm/express@4.18.2",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2022-10-08T00:00:00Z",
+      "last_registry_activity": "2023-01-01T00:00:00Z",
+      "maintainer_count": 3,
+      "weekly_downloads": 30000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 8.1,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/body-parser@1.20.1": {
+    "purl": "pkg:npm/body-parser@1.20.1",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2022-10-05T00:00:00Z",
+      "last_registry_activity": "2022-10-05T00:00:00Z",
+      "maintainer_count": 2,
+      "weekly_downloads": 25000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 7.8,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/debug@2.6.9": {
+    "purl": "pkg:npm/debug@2.6.9",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2017-09-22T00:00:00Z",
+      "last_registry_activity": "2017-09-22T00:00:00Z",
+      "maintainer_count": 2,
+      "weekly_downloads": 100000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 5.5,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/jest@29.7.0": {
+    "purl": "pkg:npm/jest@29.7.0",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2023-09-01T00:00:00Z",
+      "last_registry_activity": "2023-09-01T00:00:00Z",
+      "maintainer_count": 8,
+      "weekly_downloads": 22000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 8.9,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/pretty-format@29.7.0": {
+    "purl": "pkg:npm/pretty-format@29.7.0",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2023-09-01T00:00:00Z",
+      "last_registry_activity": "2023-09-01T00:00:00Z",
+      "maintainer_count": 8,
+      "weekly_downloads": 20000000,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": 8.7,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "OPENSSF_SCORECARD",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  },
+  "pkg:npm/isolated-leaf@1.0.0": {
+    "purl": "pkg:npm/isolated-leaf@1.0.0",
+    "vulnerabilities": [],
+    "health": {
+      "published_date": "2021-05-01T00:00:00Z",
+      "last_registry_activity": "2021-05-01T00:00:00Z",
+      "maintainer_count": 1,
+      "weekly_downloads": 120,
+      "has_install_scripts": false,
+      "openssf_scorecard_score": null,
+      "is_deprecated": false,
+      "signal_sources": {
+        "weekly_downloads": "REGISTRY_API",
+        "maintainer_count": "REGISTRY_API",
+        "openssf_scorecard_score": "UNAVAILABLE_404",
+        "has_install_scripts": "REGISTRY_API",
+        "published_date": "REGISTRY_API",
+        "last_registry_activity": "REGISTRY_API"
+      }
+    }
+  }
+}
