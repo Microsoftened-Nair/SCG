@@ -11,7 +11,10 @@ __all__ = [
     "RemediationExecutionError",
     "SBOMGenerationError",
     "SCGError",
+    "SandboxSecurityError",
     "ScoringPolicyError",
+    "SecurityPolicyViolationError",
+    "TenantIsolationError",
 ]
 
 

@@ -1,9 +1,10 @@
 """Core exception hierarchy for Supply Chain Guardian (SCG).
 
 This module defines the foundational exception architecture conformant to
-IEEE Std 830-1998 and RFC 2119. All downstream modules, pipelines, and parallel
-tracks within SCG inherit from and raise these typed exceptions to guarantee
-resilient failure handling without introducing unhandled runtime crashes.
+IEEE Std 830-1998, RFC 2119, and SCG-SRS-PHASE-1-2026-REV-2.1. All downstream
+modules, pipelines, and parallel tracks within SCG inherit from and raise
+these typed exceptions to guarantee resilient failure handling without
+introducing unhandled runtime crashes.
 """
 
 from __future__ import annotations
@@ -67,7 +68,7 @@ class SCGError(Exception):
 
 
 class ManifestParseError(SCGError):
-    """Raised when parsing a package dependency manifest fails.
+    """Raised when parsing a package dependency manifest or lockfile fails.
 
     Applicable manifests include `package.json`, `package-lock.json`,
     `requirements.txt`, and `poetry.lock`.
@@ -192,7 +193,7 @@ class SBOMGenerationError(SCGError):
 class EnrichmentAPIError(SCGError):
     """Raised when upstream vulnerability or health APIs return 5xx or invalid schemas.
 
-    Supported upstream sources include OSV, OpenSSF Scorecard, and package registries.
+    Supported upstream sources include OSV, OpenSSF Scorecard, KEV, EPSS, and package registries.
 
     Attributes:
         status_code: Optional HTTP status code returned by the remote API.
@@ -410,10 +411,154 @@ class RemediationExecutionError(SCGError):
         )
 
 
-if __name__ == "__main__":
-    import sys
+class SecurityPolicyViolationError(SCGError):
+    """Raised on security violations including malicious/invalid URLs, path traversal, or file limits.
 
-    print("Executing verification harness for scg_core/exceptions.py...")
+    Triggers include:
+    - Malicious or forbidden URI schemes (e.g., file://, ssh://, git://).
+    - Malicious flags or leading hyphens in target repository arguments.
+    - Directory and path traversal attempts resolving outside the workspace sandbox.
+    - Manifest or artifact file size limit violations (>1MB).
+
+    Attributes:
+        violation_type: Categorical identifier for the security violation.
+        target: Target identifier, URI, or path associated with the violation.
+    """
+
+    def __init__(
+        self,
+        message: str = "Security policy violation detected.",
+        violation_type: Optional[str] = None,
+        target: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initializes SecurityPolicyViolationError with violation type, target, and details.
+
+        Args:
+            message: Human-readable error description.
+            violation_type: Type of security policy violation (e.g., 'INVALID_URI_SCHEME', 'PATH_TRAVERSAL').
+            target: Malicious or invalid target string that triggered the violation.
+            details: Optional dictionary containing contextual debugging metadata.
+        """
+        merged_details: Dict[str, Any] = dict(details) if details is not None else {}
+        if violation_type is not None:
+            merged_details.setdefault("violation_type", violation_type)
+        if target is not None:
+            merged_details.setdefault("target", target)
+        super().__init__(message=message, details=merged_details)
+        self.violation_type: Optional[str] = violation_type
+        self.target: Optional[str] = target
+
+    def __repr__(self) -> str:
+        """Returns the unambiguous string representation of the exception.
+
+        Returns:
+            Formal representation including violation_type and target.
+        """
+        return (
+            f"{self.__class__.__name__}("
+            f"message={self.message!r}, "
+            f"violation_type={self.violation_type!r}, "
+            f"target={self.target!r}, "
+            f"details={self.details!r})"
+        )
+
+
+class TenantIsolationError(SCGError):
+    """Raised when missing or mismatched tenant identifiers violate multi-tenancy boundaries.
+
+    Guarantees strict isolation across tenants during database transactions, cache lookups,
+    and background worker tasks.
+
+    Attributes:
+        tenant_id: Target tenant identifier involved in the operation.
+        expected_tenant_id: Expected tenant identifier required by the boundary context.
+    """
+
+    def __init__(
+        self,
+        message: str = "Tenant isolation boundary violation detected.",
+        tenant_id: Optional[str] = None,
+        expected_tenant_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initializes TenantIsolationError with tenant context and contextual details.
+
+        Args:
+            message: Human-readable error description.
+            tenant_id: Offending or observed tenant identifier.
+            expected_tenant_id: Tenant identifier required by the current execution context.
+            details: Optional dictionary containing contextual debugging metadata.
+        """
+        merged_details: Dict[str, Any] = dict(details) if details is not None else {}
+        if tenant_id is not None:
+            merged_details.setdefault("tenant_id", tenant_id)
+        if expected_tenant_id is not None:
+            merged_details.setdefault("expected_tenant_id", expected_tenant_id)
+        super().__init__(message=message, details=merged_details)
+        self.tenant_id: Optional[str] = tenant_id
+        self.expected_tenant_id: Optional[str] = expected_tenant_id
+
+    def __repr__(self) -> str:
+        """Returns the unambiguous string representation of the exception.
+
+        Returns:
+            Formal representation including tenant_id and expected_tenant_id.
+        """
+        return (
+            f"{self.__class__.__name__}("
+            f"message={self.message!r}, "
+            f"tenant_id={self.tenant_id!r}, "
+            f"expected_tenant_id={self.expected_tenant_id!r}, "
+            f"details={self.details!r})"
+        )
+
+
+class SandboxSecurityError(SCGError):
+    """Raised on container escape attempts, root privilege requests, or unauthorized egress.
+
+    Enforces runtime sandbox security invariants during execution of untrusted package managers
+    and external commands.
+
+    Attributes:
+        threat_type: Category of sandbox threat detected (e.g., 'PRIVILEGE_ESCALATION', 'UNAUTHORIZED_EGRESS').
+    """
+
+    def __init__(
+        self,
+        message: str = "Sandbox security breach attempt detected.",
+        threat_type: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initializes SandboxSecurityError with threat classification and contextual details.
+
+        Args:
+            message: Human-readable error description.
+            threat_type: Classification of the sandbox breach or violation attempt.
+            details: Optional dictionary containing contextual debugging metadata.
+        """
+        merged_details: Dict[str, Any] = dict(details) if details is not None else {}
+        if threat_type is not None:
+            merged_details.setdefault("threat_type", threat_type)
+        super().__init__(message=message, details=merged_details)
+        self.threat_type: Optional[str] = threat_type
+
+    def __repr__(self) -> str:
+        """Returns the unambiguous string representation of the exception.
+
+        Returns:
+            Formal representation including threat_type.
+        """
+        return (
+            f"{self.__class__.__name__}("
+            f"message={self.message!r}, "
+            f"threat_type={self.threat_type!r}, "
+            f"details={self.details!r})"
+        )
+
+
+if __name__ == "__main__":
+    print("Executing verification harness for scg_core/exceptions.py (SRS Rev 2.1)...")
 
     # 1. ManifestParseError Verification
     try:
@@ -427,7 +572,7 @@ if __name__ == "__main__":
         assert exc.manifest_path == "package-lock.json", "manifest_path attribute mismatch"
         assert exc.details.get("line") == 42, "details attribute mismatch"
         assert "package-lock.json" in str(exc), "str(exc) must contain contextual details"
-        print("✓ [1/8] ManifestParseError verified successfully.")
+        print("✓ [1/11] ManifestParseError verified successfully.")
 
     # 2. GraphCycleError Verification
     try:
@@ -442,7 +587,7 @@ if __name__ == "__main__":
         assert exc.cycle == cycle_path, "cycle attribute mismatch"
         assert exc.details.get("subgraph_size") == 12, "details attribute mismatch"
         assert "pkg-a@1.0.0" in str(exc), "str(exc) must serialize cycle in details"
-        print("✓ [2/8] GraphCycleError verified successfully.")
+        print("✓ [2/11] GraphCycleError verified successfully.")
 
     # 3. SBOMGenerationError Verification
     try:
@@ -455,7 +600,7 @@ if __name__ == "__main__":
         assert isinstance(exc, SCGError), "SBOMGenerationError must inherit from SCGError"
         assert exc.exit_code == 127, "exit_code attribute mismatch"
         assert "requirements.txt" in str(exc), "str(exc) must contain details"
-        print("✓ [3/8] SBOMGenerationError verified successfully.")
+        print("✓ [3/11] SBOMGenerationError verified successfully.")
 
     # 4. EnrichmentAPIError Verification
     try:
@@ -471,7 +616,7 @@ if __name__ == "__main__":
         assert exc.endpoint == "https://api.osv.dev/v1/query", "endpoint attribute mismatch"
         assert exc.details.get("package") == "lodash", "details attribute mismatch"
         assert "503" in str(exc), "str(exc) must contain status code"
-        print("✓ [4/8] EnrichmentAPIError verified successfully.")
+        print("✓ [4/11] EnrichmentAPIError verified successfully.")
 
     # 5. RateLimitExceededError Verification
     try:
@@ -485,7 +630,7 @@ if __name__ == "__main__":
         assert exc.retry_after == 60, "retry_after attribute mismatch"
         assert exc.details.get("retry_after") == 60, "details must record retry_after"
         assert "60" in str(exc), "str(exc) must serialize retry_after"
-        print("✓ [5/8] RateLimitExceededError verified successfully.")
+        print("✓ [5/11] RateLimitExceededError verified successfully.")
 
     # 6. ASTParseError Verification
     try:
@@ -501,7 +646,7 @@ if __name__ == "__main__":
         assert exc.line_number == 105, "line_number attribute mismatch"
         assert exc.details.get("line_number") == 105, "details must record line_number"
         assert "src/index.ts" in str(exc), "str(exc) must contain file path"
-        print("✓ [6/8] ASTParseError verified successfully.")
+        print("✓ [6/11] ASTParseError verified successfully.")
 
     # 7. ScoringPolicyError Verification
     try:
@@ -515,7 +660,7 @@ if __name__ == "__main__":
         assert exc.config_path == ".scgrc.json", "config_path attribute mismatch"
         assert exc.details.get("config_path") == ".scgrc.json", "details must contain config_path"
         assert ".scgrc.json" in str(exc), "str(exc) must format details"
-        print("✓ [7/8] ScoringPolicyError verified successfully.")
+        print("✓ [7/11] ScoringPolicyError verified successfully.")
 
     # 8. RemediationExecutionError Verification
     try:
@@ -531,6 +676,52 @@ if __name__ == "__main__":
         assert "ERESOLVE" in exc.stderr, "stderr attribute mismatch"
         assert exc.details.get("exit_code") == 1, "details must record exit_code"
         assert "ERESOLVE" in str(exc), "str(exc) must serialize stderr"
-        print("✓ [8/8] RemediationExecutionError verified successfully.")
+        print("✓ [8/11] RemediationExecutionError verified successfully.")
 
-    print("\nAll 8 SCG exception types verified successfully with preserved attributes.")
+    # 9. SecurityPolicyViolationError Verification
+    try:
+        raise SecurityPolicyViolationError(
+            message="Prohibited URI scheme 'file://' rejected",
+            violation_type="FORBIDDEN_URI_SCHEME",
+            target="file:///etc/passwd",
+            details={"allowed_schemes": ["https", "http"]},
+        )
+    except SecurityPolicyViolationError as exc:
+        assert isinstance(exc, SCGError), "SecurityPolicyViolationError must inherit from SCGError"
+        assert exc.violation_type == "FORBIDDEN_URI_SCHEME", "violation_type attribute mismatch"
+        assert exc.target == "file:///etc/passwd", "target attribute mismatch"
+        assert exc.details.get("violation_type") == "FORBIDDEN_URI_SCHEME", "details must record violation_type"
+        assert "file:///etc/passwd" in str(exc), "str(exc) must serialize target"
+        print("✓ [9/11] SecurityPolicyViolationError verified successfully.")
+
+    # 10. TenantIsolationError Verification
+    try:
+        raise TenantIsolationError(
+            message="Cross-tenant access attempted without authorization",
+            tenant_id="tenant-alpha-001",
+            expected_tenant_id="tenant-beta-002",
+            details={"requested_resource": "repo_scan:uuid-999"},
+        )
+    except TenantIsolationError as exc:
+        assert isinstance(exc, SCGError), "TenantIsolationError must inherit from SCGError"
+        assert exc.tenant_id == "tenant-alpha-001", "tenant_id attribute mismatch"
+        assert exc.expected_tenant_id == "tenant-beta-002", "expected_tenant_id attribute mismatch"
+        assert exc.details.get("tenant_id") == "tenant-alpha-001", "details must record tenant_id"
+        assert "tenant-alpha-001" in str(exc), "str(exc) must serialize tenant context"
+        print("✓ [10/11] TenantIsolationError verified successfully.")
+
+    # 11. SandboxSecurityError Verification
+    try:
+        raise SandboxSecurityError(
+            message="Unauthorized egress network connection blocked",
+            threat_type="UNAUTHORIZED_EGRESS",
+            details={"destination_ip": "198.51.100.25", "port": 4444},
+        )
+    except SandboxSecurityError as exc:
+        assert isinstance(exc, SCGError), "SandboxSecurityError must inherit from SCGError"
+        assert exc.threat_type == "UNAUTHORIZED_EGRESS", "threat_type attribute mismatch"
+        assert exc.details.get("threat_type") == "UNAUTHORIZED_EGRESS", "details must record threat_type"
+        assert "UNAUTHORIZED_EGRESS" in str(exc), "str(exc) must serialize threat_type"
+        print("✓ [11/11] SandboxSecurityError verified successfully.")
+
+    print("\nAll 11 SCG exception types verified successfully with preserved attributes.")

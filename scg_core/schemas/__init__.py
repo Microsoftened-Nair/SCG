@@ -3,6 +3,8 @@
 from typing import Any
 
 __all__ = [
+    "AwareUTC",
+    "CvssSource",
     "DependencyNode",
     "Ecosystem",
     "PackageHealthData",
@@ -11,6 +13,7 @@ __all__ = [
     "SemVerString",
     "SeverityLevel",
     "TrustScoreBreakdown",
+    "VersionParseStatus",
     "VulnerabilityRecord",
 ]
 
