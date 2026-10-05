@@ -129,6 +129,11 @@ class SignalSource(str, Enum):
     CACHED = "CACHED"
     INFERRED = "INFERRED"
     ABSENT = "ABSENT"
+    REGISTRY = "REGISTRY"
+    SCORECARD = "SCORECARD"
+    UNAVAILABLE_ERROR = "UNAVAILABLE_ERROR"
+    UNAVAILABLE_RATE_LIMITED = "UNAVAILABLE_RATE_LIMITED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class VulnerabilityRecord(BaseModel):
@@ -229,11 +234,11 @@ class PackageHealthData(BaseModel):
     )
     maintainer_count: Optional[int] = Field(
         default=None,
-        ge=1,
+        ge=0,
         description="Count of active maintainers registered for the package.",
     )
-    weekly_downloads: int = Field(
-        ...,
+    weekly_downloads: Optional[int] = Field(
+        default=None,
         ge=0,
         description="Average weekly download count from the registry.",
     )
