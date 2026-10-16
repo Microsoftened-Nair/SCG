@@ -1,4 +1,4 @@
-﻿# Python bytecode
+# Python bytecode
 __pycache__/
 *.py[cod]
 *.pyc
@@ -36,3 +36,10 @@ htmlcov/
 # OS artefacts
 .DS_Store
 Thumbs.db
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+*.local
+.vite/
+
