@@ -27,12 +27,48 @@ __all__ = [
     "TrustScoreBreakdown",
     "VersionParseStatus",
     "VulnerabilityRecord",
+    # Phase 5 Track D Scoring Schemas
+    "FacetName",
+    "EvidenceKind",
+    "SuppressionScope",
+    "Evidence",
+    "Deduction",
+    "PolicyWeights",
+    "Suppression",
+    "SCGPolicyConfig",
+    "FacetResult",
+    "DependencyScoreResult",
+    "ProjectTrustReport",
+    "TWO_PLACES",
+    "FOUR_PLACES",
+    "quantize",
+    "SEVERITY_WEIGHTS",
 ]
 
 
 def __getattr__(name: str) -> Any:
     if name in __all__:
         import importlib
+
+        if name in (
+            "FacetName",
+            "EvidenceKind",
+            "SuppressionScope",
+            "Evidence",
+            "Deduction",
+            "PolicyWeights",
+            "Suppression",
+            "SCGPolicyConfig",
+            "FacetResult",
+            "DependencyScoreResult",
+            "ProjectTrustReport",
+            "TWO_PLACES",
+            "FOUR_PLACES",
+            "quantize",
+            "SEVERITY_WEIGHTS",
+        ):
+            scoring = importlib.import_module("scg_core.schemas.scoring")
+            return getattr(scoring, name)
 
         if name in (
             "ScorecardCheckDetail",
