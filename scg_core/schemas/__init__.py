@@ -43,6 +43,17 @@ __all__ = [
     "FOUR_PLACES",
     "quantize",
     "SEVERITY_WEIGHTS",
+    # Phase 6 Track E Remediation Schemas
+    "UpgradeSafetyClassification",
+    "ManifestUpdateMode",
+    "RemediationStrategy",
+    "RemediationOutcome",
+    "ScoreComputationMode",
+    "VersionChange",
+    "RemediationVerification",
+    "RemediationCandidate",
+    "SandboxExecutionResult",
+    "PullRequestResult",
 ]
 
 
@@ -69,6 +80,21 @@ def __getattr__(name: str) -> Any:
         ):
             scoring = importlib.import_module("scg_core.schemas.scoring")
             return getattr(scoring, name)
+
+        if name in (
+            "UpgradeSafetyClassification",
+            "ManifestUpdateMode",
+            "RemediationStrategy",
+            "RemediationOutcome",
+            "ScoreComputationMode",
+            "VersionChange",
+            "RemediationVerification",
+            "RemediationCandidate",
+            "SandboxExecutionResult",
+            "PullRequestResult",
+        ):
+            remediation = importlib.import_module("scg_core.schemas.remediation")
+            return getattr(remediation, name)
 
         if name in (
             "ScorecardCheckDetail",
