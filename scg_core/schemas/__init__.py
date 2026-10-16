@@ -54,12 +54,44 @@ __all__ = [
     "RemediationCandidate",
     "SandboxExecutionResult",
     "PullRequestResult",
+    # Phase 7 API Schemas
+    "ScanStatus",
+    "ErrorCode",
+    "VALID_TRANSITIONS",
+    "validate_transition",
+    "ErrorResponse",
+    "ScanInitiationRequest",
+    "ScanInitiationResponse",
+    "ScanStatusResponse",
+    "GraphNodeSummary",
+    "GraphEdge",
+    "BoundedGraphResponse",
+    "RemediationTriggerRequest",
 ]
+
+_API_SCHEMAS = {
+    "ScanStatus",
+    "ErrorCode",
+    "VALID_TRANSITIONS",
+    "validate_transition",
+    "ErrorResponse",
+    "ScanInitiationRequest",
+    "ScanInitiationResponse",
+    "ScanStatusResponse",
+    "GraphNodeSummary",
+    "GraphEdge",
+    "BoundedGraphResponse",
+    "RemediationTriggerRequest",
+}
 
 
 def __getattr__(name: str) -> Any:
     if name in __all__:
         import importlib
+
+        if name in _API_SCHEMAS:
+            api = importlib.import_module("scg_core.schemas.api")
+            return getattr(api, name)
 
         if name in (
             "FacetName",
