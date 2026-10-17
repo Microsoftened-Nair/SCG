@@ -8,6 +8,12 @@
 | express-microservice | 38 | WARM | 0.22s | 38.0 | 11.0 | 0.0690 | 0.9310 | 60.0% |
 | fastapi-auth-gateway | 28 | COLD | 0.65s | 31.0 | 9.0 | 0.0476 | 0.9524 | 55.6% |
 | fastapi-auth-gateway | 28 | WARM | 0.17s | 29.0 | 8.0 | 0.0476 | 0.9524 | 55.6% |
+| react-frontend-bundle | 94 | COLD | 1.51s | 68.0 | 26.0 | 0.0370 | 0.9630 | 66.7% |
+| react-frontend-bundle | 94 | WARM | 0.35s | 60.0 | 21.0 | 0.0370 | 0.9630 | 66.7% |
+| django-data-pipeline | 62 | COLD | 1.14s | 50.0 | 18.0 | 0.0392 | 0.9608 | 59.4% |
+| django-data-pipeline | 62 | WARM | 0.28s | 45.0 | 15.0 | 0.0392 | 0.9608 | 59.4% |
+| spring-boot-enterprise | 185 | COLD | 2.57s | 120.0 | 48.0 | 0.0314 | 0.9686 | 63.7% |
+| spring-boot-enterprise | 185 | WARM | 0.60s | 110.0 | 38.0 | 0.0314 | 0.9686 | 63.7% |
 
 ## Statistical Score Calibration & Empirical Invariants
 

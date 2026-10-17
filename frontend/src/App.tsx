@@ -11,6 +11,7 @@ import { DependencyGraphCanvas } from "./components/DependencyGraphCanvas";
 import { GraphNodeSummary, RiskTier, ReachabilityStatus } from "./types/api.gen";
 import { SCENARIOS, ScanScenario } from "./data/mockScans";
 import { getLayoutedElements } from "./utils/layout";
+import { scanGitHubRepository } from "./services/repoScanner";
 
 interface RemediationState {
   status: "idle" | "solving" | "verifying" | "success" | "failed";
@@ -24,11 +25,13 @@ interface RemediationState {
 export const App: React.FC = () => {
   // Scenario selection
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("payment-service");
+  const [customScenario, setCustomScenario] = useState<ScanScenario | null>(null);
   const [customRepoUrl, setCustomRepoUrl] = useState<string>(
     SCENARIOS["payment-service"].repositoryUrl
   );
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanMessage, setScanMessage] = useState<string>("Ready");
+  const [scanError, setScanError] = useState<string | null>(null);
 
   // Layout direction ("TB" or "LR")
   const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("TB");
@@ -41,8 +44,13 @@ export const App: React.FC = () => {
   // Cluster expansion state: set of cluster IDs currently expanded
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
 
-  // Current active scenario
-  const scenario: ScanScenario = SCENARIOS[selectedScenarioId] || SCENARIOS["payment-service"];
+  // Current active scenario: custom scanned scenario or chosen preset
+  const scenario: ScanScenario = useMemo(() => {
+    if (selectedScenarioId === "custom" && customScenario) {
+      return customScenario;
+    }
+    return SCENARIOS[selectedScenarioId] || SCENARIOS["payment-service"];
+  }, [selectedScenarioId, customScenario]);
 
   // React Flow interactive nodes & edges state
   const [nodes, setNodes] = useState<Node<GraphNodeSummary>[]>([]);
@@ -61,13 +69,17 @@ export const App: React.FC = () => {
 
   // Re-compute and auto-layout the tree whenever scenario, cluster expansion, or layout direction changes
   const refreshLayout = useCallback(
-    (dir: "TB" | "LR" = layoutDirection, currentExpClusters = expandedClusters) => {
-      let rawNodes: Node<GraphNodeSummary>[] = [...scenario.nodes];
-      let rawEdges: Edge[] = [...scenario.edges];
+    (
+      dir: "TB" | "LR" = layoutDirection,
+      currentExpClusters = expandedClusters,
+      targetScenario = scenario
+    ) => {
+      let rawNodes: Node<GraphNodeSummary>[] = [...targetScenario.nodes];
+      let rawEdges: Edge[] = [...targetScenario.edges];
 
       // Inject cluster children if expanded
       currentExpClusters.forEach((clusterId) => {
-        const childData = scenario.clusterChildren?.[clusterId];
+        const childData = targetScenario.clusterChildren?.[clusterId];
         if (childData) {
           rawNodes = rawNodes.map((n) =>
             n.id === clusterId
@@ -94,9 +106,9 @@ export const App: React.FC = () => {
 
   // Trigger initial layout when scenario changes
   useEffect(() => {
-    refreshLayout(layoutDirection, expandedClusters);
+    refreshLayout(layoutDirection, expandedClusters, scenario);
     setSelectedPackage(scenario.nodes[2]?.data || scenario.nodes[0]?.data);
-  }, [selectedScenarioId, layoutDirection]);
+  }, [selectedScenarioId, scenario, layoutDirection]);
 
   // Support interactive dragging of nodes
   const onNodesChange: OnNodesChange<Node<GraphNodeSummary>> = useCallback(
@@ -114,14 +126,18 @@ export const App: React.FC = () => {
     []
   );
 
-  // Switch scenario
+  // Switch scenario preset
   const handleScenarioChange = (newId: string) => {
     setSelectedScenarioId(newId);
-    const newSc = SCENARIOS[newId];
-    if (newSc) {
-      setCustomRepoUrl(newSc.repositoryUrl);
-      setExpandedClusters(new Set());
-      setRemediationState({ status: "idle", package_name: "", current_version: "", target_version: "" });
+    setScanError(null);
+    if (newId !== "custom") {
+      const newSc = SCENARIOS[newId];
+      if (newSc) {
+        setCustomRepoUrl(newSc.repositoryUrl);
+        setExpandedClusters(new Set());
+        setRemediationState({ status: "idle", package_name: "", current_version: "", target_version: "" });
+        setScanMessage(`Loaded ${newSc.name}`);
+      }
     }
   };
 
@@ -136,37 +152,55 @@ export const App: React.FC = () => {
           next.add(clusterId);
         }
         // Immediately compute new layout with clean positioning
-        refreshLayout(layoutDirection, next);
+        refreshLayout(layoutDirection, next, scenario);
         return next;
       });
     },
-    [layoutDirection, refreshLayout]
+    [layoutDirection, refreshLayout, scenario]
   );
 
   // Handle layout direction switch (TB <-> LR)
   const handleLayoutDirectionChange = (newDir: "TB" | "LR") => {
     setLayoutDirection(newDir);
-    refreshLayout(newDir, expandedClusters);
+    refreshLayout(newDir, expandedClusters, scenario);
   };
 
-  // Simulate scanning a repository URL
-  const handleScanRepository = (e: React.FormEvent) => {
+  // Live Scan of any GitHub repository URL
+  const handleScanRepository = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsScanning(true);
-    setScanMessage("Cloning repository...");
+    if (!customRepoUrl.trim()) return;
 
-    setTimeout(() => {
-      setScanMessage("Generating SBOM & AST reachability graph...");
-      setTimeout(() => {
-        setScanMessage("Enriching with OSV & Scorecard telemetry...");
-        setTimeout(() => {
-          setIsScanning(false);
-          setScanMessage("Scan Complete (100% evaluated)");
-          setExpandedClusters(new Set());
-          refreshLayout(layoutDirection, new Set());
-        }, 500);
-      }, 500);
-    }, 500);
+    setIsScanning(true);
+    setScanError(null);
+    setScanMessage("Cloning repository & inspecting dependency manifests...");
+
+    try {
+      // Execute real repository manifest inspection & AST reachability synthesis
+      const scanned = await scanGitHubRepository(customRepoUrl);
+
+      setScanMessage("Computing composite trust scores & DAG topology...");
+      setCustomScenario(scanned);
+      setSelectedScenarioId("custom");
+      setExpandedClusters(new Set());
+
+      // Compute Dagre layout
+      const layouted = getLayoutedElements(scanned.nodes, scanned.edges, {
+        direction: layoutDirection,
+        nodeSep: 60,
+        rankSep: 100,
+      });
+
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+      setSelectedPackage(scanned.nodes[1]?.data || scanned.nodes[0]?.data);
+      setScanMessage(`Scan Complete: ${scanned.name}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setScanError(msg);
+      setScanMessage("Scan Failed");
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   // Apply search query and tier/reachability filters to dim non-matching nodes
@@ -208,7 +242,8 @@ export const App: React.FC = () => {
     if (pkg.package_name === "body-parser") return "1.20.3";
     if (pkg.package_name === "d3-color") return "3.1.0";
     if (pkg.package_name === "httpx") return "0.24.1";
-    return "Latest Patch";
+    if (pkg.package_name === "recharts") return "2.15.5";
+    return "Next Safe Patch";
   };
 
   // Trigger autonomous remediation
@@ -229,8 +264,8 @@ export const App: React.FC = () => {
           package_name: pkg.package_name,
           current_version: pkg.version,
           target_version: target,
-          pr_url: `https://github.com/acme-corp/payment-service/pull/42`,
-          branch_name: `scg/remediate-${pkg.package_name}-${target}`,
+          pr_url: `https://github.com/Microsoftened-Nair/circularity-ai-insight/pull/1`,
+          branch_name: `scg/remediate-${pkg.package_name.replace(/[^a-zA-Z0-9_-]/g, "-")}-${target}`,
         });
       }, 1000);
     }, 1000);
@@ -334,8 +369,8 @@ export const App: React.FC = () => {
                 v0.8.0
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Interactive Dependency Graph &amp; Autonomous Remediation
+            <p className="text-[11px] text-slate-400 truncate max-w-[280px]">
+              {selectedScenarioId === "custom" ? `Scanning: ${scenario.name}` : scenario.description}
             </p>
           </div>
         </div>
@@ -357,7 +392,7 @@ export const App: React.FC = () => {
           <button
             type="submit"
             disabled={isScanning}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:bg-slate-800 text-white font-medium text-xs rounded transition-colors flex items-center gap-1.5 shrink-0"
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:bg-slate-800 text-white font-semibold text-xs rounded transition-colors flex items-center gap-1.5 shrink-0 shadow-sm"
           >
             {isScanning ? (
               <>
@@ -377,8 +412,11 @@ export const App: React.FC = () => {
             <select
               value={selectedScenarioId}
               onChange={(e) => handleScenarioChange(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-[210px]"
             >
+              {customScenario && (
+                <option value="custom">🔍 Live: {customScenario.name}</option>
+              )}
               <option value="payment-service">💳 Payment Service (Node/Maven)</option>
               <option value="fastapi-cloud-gateway">🌐 FastAPI Gateway (PyPI)</option>
               <option value="react-analytics-dashboard">⚛️ React Dashboard (NPM)</option>
@@ -387,7 +425,7 @@ export const App: React.FC = () => {
 
           <div className="flex items-center gap-1">
             <button
-              onClick={() => refreshLayout(layoutDirection, expandedClusters)}
+              onClick={() => refreshLayout(layoutDirection, expandedClusters, scenario)}
               title="Auto-organize tree layout"
               className="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[11px] text-slate-200 transition-colors flex items-center gap-1"
             >
@@ -472,15 +510,23 @@ export const App: React.FC = () => {
               <option value="DIRECT_IMPORTED">Direct Imported</option>
               <option value="TRANSITIVE_REQUIRED">Transitive Required</option>
               <option value="UNREFERENCED_LATENT">Unreferenced Latent</option>
+              <option value="DEV_DEPENDENCY">Dev Dependency</option>
             </select>
           </div>
         </div>
 
         {/* Live Status & Quick Stats */}
         <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-[11px]">
-            {isScanning ? scanMessage : `${stats.total} Nodes`}
-          </span>
+          {scanError ? (
+            <span className="text-rose-400 text-[11px] font-medium bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800">
+              ⚠️ {scanError}
+            </span>
+          ) : (
+            <span className="text-slate-400 text-[11px]">
+              {isScanning ? scanMessage : `${stats.total} Nodes in Graph`}
+            </span>
+          )}
+
           <div className="flex items-center gap-1.5">
             {stats.critical > 0 && (
               <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[11px] font-medium">
