@@ -85,40 +85,59 @@ export const NodeSelectionContext = createContext<
   ((node: GraphNodeSummary) => void) | undefined
 >(undefined);
 
+/** Context allowing aggregate cluster nodes to trigger expand / collapse */
+export const NodeClusterToggleContext = createContext<
+  ((clusterId: string) => void) | undefined
+>(undefined);
+
 /**
  * AccessiblePackageNode component implementing multi-channel visual risk encoding
  * and WCAG AA accessibility (P8-02, P8-03).
  */
 export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> = ({
+  id,
   data,
 }) => {
   const onSelectPackage = useContext(NodeSelectionContext);
+  const onToggleCluster = useContext(NodeClusterToggleContext);
 
   const handleClick = useCallback(() => {
+    if (data.is_aggregate_cluster && onToggleCluster) {
+      onToggleCluster(id);
+    }
     onSelectPackage?.(data);
-  }, [onSelectPackage, data]);
+  }, [id, data, onSelectPackage, onToggleCluster]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        if (data.is_aggregate_cluster && onToggleCluster) {
+          onToggleCluster(id);
+        }
         onSelectPackage?.(data);
       }
     },
-    [onSelectPackage, data]
+    [id, data, onSelectPackage, onToggleCluster]
   );
 
-  // Handle collapsed aggregate cluster
+  const isDimmed = Boolean(data.is_dimmed);
+  const dimClass = isDimmed ? "opacity-25 filter grayscale" : "opacity-100";
+
+  // Handle collapsed / expanded aggregate cluster
   if (data.is_aggregate_cluster) {
     const clusterCount = data.aggregated_count ?? 0;
-    const clusterAriaLabel = `+ ${clusterCount} Clean Dependencies`;
+    const isExpanded = Boolean(data.is_expanded);
+    const clusterAriaLabel = isExpanded
+      ? `- Collapse ${clusterCount} Clean Dependencies`
+      : `+ ${clusterCount} Clean Dependencies`;
 
     return (
       <div
         role="button"
         tabIndex={0}
         aria-label={clusterAriaLabel}
-        className="px-4 py-2.5 rounded-lg border-dashed border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold text-xs tracking-wide shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all select-none"
+        className={`px-4 py-2.5 rounded-lg border-dashed border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold text-xs tracking-wide shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all select-none ${dimClass}`}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
       >
@@ -128,8 +147,11 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
           className="w-2.5 h-2.5 bg-emerald-700 border-2 border-white"
         />
         <div className="flex items-center gap-1.5">
-          <span aria-hidden="true">🛡️</span>
+          <span aria-hidden="true">{isExpanded ? "📂" : "🛡️"}</span>
           <span>{clusterAriaLabel}</span>
+          <span className="text-[10px] text-emerald-800 ml-1 underline decoration-dotted">
+            {isExpanded ? "(click to collapse)" : "(click to expand)"}
+          </span>
         </div>
         <Handle
           type="source"
@@ -150,7 +172,7 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
       role="button"
       tabIndex={0}
       aria-label={descriptiveAriaLabel}
-      className={`relative min-w-[200px] max-w-[260px] p-3 rounded-lg shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${styling.border} ${pulseClass}`}
+      className={`relative min-w-[200px] max-w-[260px] p-3 rounded-lg shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${styling.border} ${pulseClass} ${dimClass}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
@@ -211,6 +233,7 @@ export interface DependencyGraphCanvasProps {
   nodes: Node<GraphNodeSummary>[];
   edges: Edge[];
   onSelectPackage?: (node: GraphNodeSummary) => void;
+  onToggleCluster?: (clusterId: string) => void;
   className?: string;
 }
 
@@ -222,6 +245,7 @@ export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
   nodes,
   edges,
   onSelectPackage,
+  onToggleCluster,
   className = "w-full h-[600px]",
 }) => {
   const nodeTypes: NodeTypes = useMemo(
@@ -248,39 +272,41 @@ export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
 
   return (
     <NodeSelectionContext.Provider value={onSelectPackage}>
-      <div
-        className={`relative ${className}`}
-        onKeyDown={handleKeyDown}
-        tabIndex={-1}
-      >
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          fitView
-          onNodeClick={(_event, node) => {
-            if (node.data && onSelectPackage) {
-              onSelectPackage(node.data as GraphNodeSummary);
-            }
-          }}
-          aria-label="Software Dependency Risk Graph"
+      <NodeClusterToggleContext.Provider value={onToggleCluster}>
+        <div
+          className={`relative ${className}`}
+          onKeyDown={handleKeyDown}
+          tabIndex={-1}
         >
-          <Background color="#94a3b8" gap={16} />
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              const summary = node.data as GraphNodeSummary | undefined;
-              if (summary?.risk_tier) {
-                return getTierStyling(summary.risk_tier).color;
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            fitView
+            onNodeClick={(_event, node) => {
+              if (node.data && onSelectPackage) {
+                onSelectPackage(node.data as GraphNodeSummary);
               }
-              return "#64748b";
             }}
-            nodeStrokeWidth={3}
-            zoomable
-            pannable
-          />
-        </ReactFlow>
-      </div>
+            aria-label="Software Dependency Risk Graph"
+          >
+            <Background color="#94a3b8" gap={16} />
+            <Controls />
+            <MiniMap
+              nodeColor={(node) => {
+                const summary = node.data as GraphNodeSummary | undefined;
+                if (summary?.risk_tier) {
+                  return getTierStyling(summary.risk_tier).color;
+                }
+                return "#64748b";
+              }}
+              nodeStrokeWidth={3}
+              zoomable
+              pannable
+            />
+          </ReactFlow>
+        </div>
+      </NodeClusterToggleContext.Provider>
     </NodeSelectionContext.Provider>
   );
 };

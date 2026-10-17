@@ -18,6 +18,7 @@ import {
   AccessiblePackageNode,
   DependencyGraphCanvas,
   NodeSelectionContext,
+  NodeClusterToggleContext,
 } from "../src/components/DependencyGraphCanvas";
 import { GraphNodeSummary, RiskTier } from "../src/types/api.gen";
 
@@ -240,6 +241,56 @@ describe("UI-TC-02: AccessiblePackageNode WCAG AA Accessibility Verification", (
     // Mouse trigger: Click
     fireEvent.click(nodeButton);
     expect(onSelect).toHaveBeenCalledTimes(2);
+  });
+
+  it("triggers onToggleCluster when aggregate cluster is clicked", () => {
+    const onToggle = vi.fn();
+    const clusterData: GraphNodeSummary = {
+      ...baseNodeData,
+      is_aggregate_cluster: true,
+      aggregated_count: 8,
+    };
+
+    render(
+      React.createElement(
+        ReactFlowProvider,
+        null,
+        React.createElement(
+          NodeClusterToggleContext.Provider,
+          { value: onToggle },
+          React.createElement(
+            AccessiblePackageNode,
+            createMockNodeProps(clusterData, "cluster-toggle-test")
+          )
+        )
+      )
+    );
+
+    const clusterButton = screen.getByRole("button", { name: /\+ 8 Clean Dependencies/ });
+    fireEvent.click(clusterButton);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledWith("cluster-toggle-test");
+  });
+
+  it("applies dimmed style when is_dimmed is true", () => {
+    const dimmedData: GraphNodeSummary = {
+      ...baseNodeData,
+      is_dimmed: true,
+    };
+
+    render(
+      React.createElement(
+        ReactFlowProvider,
+        null,
+        React.createElement(
+          AccessiblePackageNode,
+          createMockNodeProps(dimmedData, "node-dimmed")
+        )
+      )
+    );
+
+    const nodeButton = screen.getByRole("button");
+    expect(nodeButton.className).toContain("opacity-25");
   });
 });
 
