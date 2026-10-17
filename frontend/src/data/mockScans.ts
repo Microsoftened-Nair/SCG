@@ -1,4 +1,4 @@
-import { Node, Edge } from "@xyflow/react";
+import { Node, Edge, MarkerType } from "@xyflow/react";
 import { GraphNodeSummary } from "../types/api.gen";
 
 export interface ScanScenario {
@@ -23,7 +23,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-root",
         type: "accessiblePackage",
-        position: { x: 380, y: 30 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/payment-service@1.0.0",
           package_name: "payment-service",
@@ -40,7 +40,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-express",
         type: "accessiblePackage",
-        position: { x: 120, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/express@4.18.2",
           package_name: "express",
@@ -57,7 +57,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-log4j",
         type: "accessiblePackage",
-        position: { x: 420, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
           package_name: "log4j-core",
@@ -74,7 +74,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-jwt",
         type: "accessiblePackage",
-        position: { x: 720, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/jsonwebtoken@8.5.1",
           package_name: "jsonwebtoken",
@@ -91,7 +91,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-body-parser",
         type: "accessiblePackage",
-        position: { x: 60, y: 340 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/body-parser@1.20.1",
           package_name: "body-parser",
@@ -108,7 +108,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-clean-cluster",
         type: "accessiblePackage",
-        position: { x: 280, y: 340 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "cluster:clean-deps-payment",
           package_name: "Clean Dependencies Cluster",
@@ -121,16 +121,53 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           vuln_count: 0,
           reachability: "UNREFERENCED_LATENT",
           is_aggregate_cluster: true,
-          aggregated_count: 18,
+          aggregated_count: 3,
         },
       },
     ],
     edges: [
-      { id: "e-root-express", source: "pkg-root", target: "pkg-express", animated: true },
-      { id: "e-root-log4j", source: "pkg-root", target: "pkg-log4j", animated: true, style: { stroke: "#e11d48", strokeWidth: 2.5 } },
-      { id: "e-root-jwt", source: "pkg-root", target: "pkg-jwt", animated: true, style: { stroke: "#f43f5e", strokeWidth: 2 } },
-      { id: "e-express-bodyparser", source: "pkg-express", target: "pkg-body-parser" },
-      { id: "e-express-cluster", source: "pkg-express", target: "pkg-clean-cluster", style: { strokeDasharray: "4 4" } },
+      {
+        id: "e-root-express",
+        source: "pkg-root",
+        target: "pkg-express",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#64748b" },
+        style: { stroke: "#64748b", strokeWidth: 1.5 },
+      },
+      {
+        id: "e-root-log4j",
+        source: "pkg-root",
+        target: "pkg-log4j",
+        type: "smoothstep",
+        animated: true,
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#e11d48" },
+        style: { stroke: "#e11d48", strokeWidth: 2.5 },
+      },
+      {
+        id: "e-root-jwt",
+        source: "pkg-root",
+        target: "pkg-jwt",
+        type: "smoothstep",
+        animated: true,
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#f43f5e" },
+        style: { stroke: "#f43f5e", strokeWidth: 2 },
+      },
+      {
+        id: "e-express-bodyparser",
+        source: "pkg-express",
+        target: "pkg-body-parser",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#d97706" },
+        style: { stroke: "#d97706", strokeWidth: 1.5 },
+      },
+      {
+        id: "e-express-cluster",
+        source: "pkg-express",
+        target: "pkg-clean-cluster",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+        style: { stroke: "#059669", strokeWidth: 1.5, strokeDasharray: "4 4" },
+      },
     ],
     clusterChildren: {
       "pkg-clean-cluster": {
@@ -138,15 +175,15 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           {
             id: "pkg-mime",
             type: "accessiblePackage",
-            position: { x: 230, y: 340 },
+            position: { x: 0, y: 0 },
             data: {
               purl: "pkg:npm/mime-types@2.1.35",
               package_name: "mime-types",
               version: "2.1.35",
-              depth: 2,
+              depth: 3,
               composite_score: 94.0,
               risk_tier: "CLEAN",
-              risk_reason: "No known vulnerabilities, high download volume",
+              risk_reason: "Verified clean, no known vulnerabilities",
               should_emphasize: false,
               vuln_count: 0,
               reachability: "UNREFERENCED_LATENT",
@@ -155,12 +192,12 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           {
             id: "pkg-qs",
             type: "accessiblePackage",
-            position: { x: 420, y: 340 },
+            position: { x: 0, y: 0 },
             data: {
               purl: "pkg:npm/qs@6.11.0",
               package_name: "qs",
               version: "6.11.0",
-              depth: 2,
+              depth: 3,
               composite_score: 92.0,
               risk_tier: "CLEAN",
               risk_reason: "Query string parser, verified clean",
@@ -172,12 +209,12 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           {
             id: "pkg-etag",
             type: "accessiblePackage",
-            position: { x: 610, y: 340 },
+            position: { x: 0, y: 0 },
             data: {
               purl: "pkg:npm/etag@1.8.1",
               package_name: "etag",
               version: "1.8.1",
-              depth: 2,
+              depth: 3,
               composite_score: 98.0,
               risk_tier: "CLEAN",
               risk_reason: "Deterministic HTTP ETag generator, zero CVEs",
@@ -188,9 +225,30 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           },
         ],
         edges: [
-          { id: "e-express-mime", source: "pkg-express", target: "pkg-mime" },
-          { id: "e-express-qs", source: "pkg-express", target: "pkg-qs" },
-          { id: "e-express-etag", source: "pkg-express", target: "pkg-etag" },
+          {
+            id: "e-cluster-mime",
+            source: "pkg-clean-cluster",
+            target: "pkg-mime",
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+            style: { stroke: "#059669", strokeWidth: 1.5 },
+          },
+          {
+            id: "e-cluster-qs",
+            source: "pkg-clean-cluster",
+            target: "pkg-qs",
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+            style: { stroke: "#059669", strokeWidth: 1.5 },
+          },
+          {
+            id: "e-cluster-etag",
+            source: "pkg-clean-cluster",
+            target: "pkg-etag",
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+            style: { stroke: "#059669", strokeWidth: 1.5 },
+          },
         ],
       },
     },
@@ -206,7 +264,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-gateway-root",
         type: "accessiblePackage",
-        position: { x: 380, y: 30 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:pypi/cloud-gateway@2.4.0",
           package_name: "cloud-gateway",
@@ -223,7 +281,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-fastapi",
         type: "accessiblePackage",
-        position: { x: 220, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:pypi/fastapi@0.111.0",
           package_name: "fastapi",
@@ -240,7 +298,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-httpx",
         type: "accessiblePackage",
-        position: { x: 550, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:pypi/httpx@0.24.0",
           package_name: "httpx",
@@ -257,7 +315,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-starlette",
         type: "accessiblePackage",
-        position: { x: 120, y: 340 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:pypi/starlette@0.37.2",
           package_name: "starlette",
@@ -274,7 +332,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-pydantic",
         type: "accessiblePackage",
-        position: { x: 340, y: 340 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:pypi/pydantic@2.7.4",
           package_name: "pydantic",
@@ -290,10 +348,38 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       },
     ],
     edges: [
-      { id: "e-gw-fastapi", source: "pkg-gateway-root", target: "pkg-fastapi", animated: true },
-      { id: "e-gw-httpx", source: "pkg-gateway-root", target: "pkg-httpx", animated: true, style: { stroke: "#d97706", strokeWidth: 2 } },
-      { id: "e-fastapi-starlette", source: "pkg-fastapi", target: "pkg-starlette" },
-      { id: "e-fastapi-pydantic", source: "pkg-fastapi", target: "pkg-pydantic" },
+      {
+        id: "e-gw-fastapi",
+        source: "pkg-gateway-root",
+        target: "pkg-fastapi",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#64748b" },
+        style: { stroke: "#64748b", strokeWidth: 1.5 },
+      },
+      {
+        id: "e-gw-httpx",
+        source: "pkg-gateway-root",
+        target: "pkg-httpx",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#d97706" },
+        style: { stroke: "#d97706", strokeWidth: 2 },
+      },
+      {
+        id: "e-fastapi-starlette",
+        source: "pkg-fastapi",
+        target: "pkg-starlette",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#64748b" },
+        style: { stroke: "#64748b", strokeWidth: 1.5 },
+      },
+      {
+        id: "e-fastapi-pydantic",
+        source: "pkg-fastapi",
+        target: "pkg-pydantic",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+        style: { stroke: "#059669", strokeWidth: 1.5 },
+      },
     ],
   },
 
@@ -307,7 +393,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-ui-root",
         type: "accessiblePackage",
-        position: { x: 380, y: 30 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/analytics-dashboard@3.1.0",
           package_name: "analytics-dashboard",
@@ -324,7 +410,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-react",
         type: "accessiblePackage",
-        position: { x: 150, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/react@18.3.1",
           package_name: "react",
@@ -341,7 +427,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-d3",
         type: "accessiblePackage",
-        position: { x: 450, y: 170 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "pkg:npm/d3-color@2.0.0",
           package_name: "d3-color",
@@ -358,7 +444,7 @@ export const SCENARIOS: Record<string, ScanScenario> = {
       {
         id: "pkg-ui-clean-cluster",
         type: "accessiblePackage",
-        position: { x: 280, y: 330 },
+        position: { x: 0, y: 0 },
         data: {
           purl: "cluster:clean-ui-deps",
           package_name: "Clean UI Utilities Cluster",
@@ -371,14 +457,94 @@ export const SCENARIOS: Record<string, ScanScenario> = {
           vuln_count: 0,
           reachability: "UNREFERENCED_LATENT",
           is_aggregate_cluster: true,
-          aggregated_count: 32,
+          aggregated_count: 2,
         },
       },
     ],
     edges: [
-      { id: "e-ui-react", source: "pkg-ui-root", target: "pkg-react" },
-      { id: "e-ui-d3", source: "pkg-ui-root", target: "pkg-d3", animated: true, style: { stroke: "#f43f5e", strokeWidth: 2 } },
-      { id: "e-ui-cluster", source: "pkg-ui-root", target: "pkg-ui-clean-cluster", style: { strokeDasharray: "4 4" } },
+      {
+        id: "e-ui-react",
+        source: "pkg-ui-root",
+        target: "pkg-react",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+        style: { stroke: "#059669", strokeWidth: 1.5 },
+      },
+      {
+        id: "e-ui-d3",
+        source: "pkg-ui-root",
+        target: "pkg-d3",
+        type: "smoothstep",
+        animated: true,
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#f43f5e" },
+        style: { stroke: "#f43f5e", strokeWidth: 2 },
+      },
+      {
+        id: "e-ui-cluster",
+        source: "pkg-ui-root",
+        target: "pkg-ui-clean-cluster",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+        style: { stroke: "#059669", strokeWidth: 1.5, strokeDasharray: "4 4" },
+      },
     ],
+    clusterChildren: {
+      "pkg-ui-clean-cluster": {
+        nodes: [
+          {
+            id: "pkg-clsx",
+            type: "accessiblePackage",
+            position: { x: 0, y: 0 },
+            data: {
+              purl: "pkg:npm/clsx@2.1.1",
+              package_name: "clsx",
+              version: "2.1.1",
+              depth: 3,
+              composite_score: 99.0,
+              risk_tier: "CLEAN",
+              risk_reason: "Tiny utility for constructing className strings",
+              should_emphasize: false,
+              vuln_count: 0,
+              reachability: "UNREFERENCED_LATENT",
+            },
+          },
+          {
+            id: "pkg-zustand",
+            type: "accessiblePackage",
+            position: { x: 0, y: 0 },
+            data: {
+              purl: "pkg:npm/zustand@4.5.2",
+              package_name: "zustand",
+              version: "4.5.2",
+              depth: 3,
+              composite_score: 97.0,
+              risk_tier: "CLEAN",
+              risk_reason: "Lightweight state management",
+              should_emphasize: false,
+              vuln_count: 0,
+              reachability: "UNREFERENCED_LATENT",
+            },
+          },
+        ],
+        edges: [
+          {
+            id: "e-cluster-clsx",
+            source: "pkg-ui-clean-cluster",
+            target: "pkg-clsx",
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+            style: { stroke: "#059669", strokeWidth: 1.5 },
+          },
+          {
+            id: "e-cluster-zustand",
+            source: "pkg-ui-clean-cluster",
+            target: "pkg-zustand",
+            type: "smoothstep",
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#059669" },
+            style: { stroke: "#059669", strokeWidth: 1.5 },
+          },
+        ],
+      },
+    },
   },
 };

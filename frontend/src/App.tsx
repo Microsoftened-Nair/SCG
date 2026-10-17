@@ -1,8 +1,16 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { Node, Edge } from "@xyflow/react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Node,
+  Edge,
+  applyNodeChanges,
+  applyEdgeChanges,
+  OnNodesChange,
+  OnEdgesChange,
+} from "@xyflow/react";
 import { DependencyGraphCanvas } from "./components/DependencyGraphCanvas";
 import { GraphNodeSummary, RiskTier, ReachabilityStatus } from "./types/api.gen";
 import { SCENARIOS, ScanScenario } from "./data/mockScans";
+import { getLayoutedElements } from "./utils/layout";
 
 interface RemediationState {
   status: "idle" | "solving" | "verifying" | "success" | "failed";
@@ -22,6 +30,9 @@ export const App: React.FC = () => {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanMessage, setScanMessage] = useState<string>("Ready");
 
+  // Layout direction ("TB" or "LR")
+  const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("TB");
+
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [tierFilter, setTierFilter] = useState<RiskTier | "ALL">("ALL");
@@ -33,10 +44,12 @@ export const App: React.FC = () => {
   // Current active scenario
   const scenario: ScanScenario = SCENARIOS[selectedScenarioId] || SCENARIOS["payment-service"];
 
+  // React Flow interactive nodes & edges state
+  const [nodes, setNodes] = useState<Node<GraphNodeSummary>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+
   // Selected package in side drawer
-  const [selectedPackage, setSelectedPackage] = useState<GraphNodeSummary | null>(
-    scenario.nodes[2]?.data || scenario.nodes[0]?.data
-  );
+  const [selectedPackage, setSelectedPackage] = useState<GraphNodeSummary | null>(null);
 
   // Remediation state
   const [remediationState, setRemediationState] = useState<RemediationState>({
@@ -46,16 +59,94 @@ export const App: React.FC = () => {
     target_version: "",
   });
 
+  // Re-compute and auto-layout the tree whenever scenario, cluster expansion, or layout direction changes
+  const refreshLayout = useCallback(
+    (dir: "TB" | "LR" = layoutDirection, currentExpClusters = expandedClusters) => {
+      let rawNodes: Node<GraphNodeSummary>[] = [...scenario.nodes];
+      let rawEdges: Edge[] = [...scenario.edges];
+
+      // Inject cluster children if expanded
+      currentExpClusters.forEach((clusterId) => {
+        const childData = scenario.clusterChildren?.[clusterId];
+        if (childData) {
+          rawNodes = rawNodes.map((n) =>
+            n.id === clusterId
+              ? { ...n, data: { ...n.data, is_expanded: true } }
+              : n
+          );
+          rawNodes = [...rawNodes, ...childData.nodes];
+          rawEdges = [...rawEdges, ...childData.edges];
+        }
+      });
+
+      // Apply Dagre deterministic tree layout
+      const layouted = getLayoutedElements(rawNodes, rawEdges, {
+        direction: dir,
+        nodeSep: 60,
+        rankSep: 100,
+      });
+
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+    },
+    [scenario, layoutDirection, expandedClusters]
+  );
+
+  // Trigger initial layout when scenario changes
+  useEffect(() => {
+    refreshLayout(layoutDirection, expandedClusters);
+    setSelectedPackage(scenario.nodes[2]?.data || scenario.nodes[0]?.data);
+  }, [selectedScenarioId, layoutDirection]);
+
+  // Support interactive dragging of nodes
+  const onNodesChange: OnNodesChange<Node<GraphNodeSummary>> = useCallback(
+    (changes) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+    },
+    []
+  );
+
+  // Support edge changes
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    []
+  );
+
   // Switch scenario
   const handleScenarioChange = (newId: string) => {
     setSelectedScenarioId(newId);
     const newSc = SCENARIOS[newId];
     if (newSc) {
       setCustomRepoUrl(newSc.repositoryUrl);
-      setSelectedPackage(newSc.nodes[2]?.data || newSc.nodes[0]?.data);
       setExpandedClusters(new Set());
       setRemediationState({ status: "idle", package_name: "", current_version: "", target_version: "" });
     }
+  };
+
+  // Toggle clean cluster expansion with automatic non-overlapping re-layout
+  const handleToggleCluster = useCallback(
+    (clusterId: string) => {
+      setExpandedClusters((prev) => {
+        const next = new Set(prev);
+        if (next.has(clusterId)) {
+          next.delete(clusterId);
+        } else {
+          next.add(clusterId);
+        }
+        // Immediately compute new layout with clean positioning
+        refreshLayout(layoutDirection, next);
+        return next;
+      });
+    },
+    [layoutDirection, refreshLayout]
+  );
+
+  // Handle layout direction switch (TB <-> LR)
+  const handleLayoutDirectionChange = (newDir: "TB" | "LR") => {
+    setLayoutDirection(newDir);
+    refreshLayout(newDir, expandedClusters);
   };
 
   // Simulate scanning a repository URL
@@ -72,50 +163,18 @@ export const App: React.FC = () => {
           setIsScanning(false);
           setScanMessage("Scan Complete (100% evaluated)");
           setExpandedClusters(new Set());
-        }, 600);
-      }, 600);
-    }, 600);
+          refreshLayout(layoutDirection, new Set());
+        }, 500);
+      }, 500);
+    }, 500);
   };
 
-  // Toggle clean cluster expansion
-  const handleToggleCluster = useCallback((clusterId: string) => {
-    setExpandedClusters((prev) => {
-      const next = new Set(prev);
-      if (next.has(clusterId)) {
-        next.delete(clusterId);
-      } else {
-        next.add(clusterId);
-      }
-      return next;
-    });
-  }, []);
-
-  // Compute active nodes and edges incorporating cluster expansion & filters
-  const { displayNodes, displayEdges } = useMemo(() => {
-    let currentNodes: Node<GraphNodeSummary>[] = [...scenario.nodes];
-    let currentEdges: Edge[] = [...scenario.edges];
-
-    // If cluster is expanded, inject child nodes and edges
-    expandedClusters.forEach((clusterId) => {
-      const childData = scenario.clusterChildren?.[clusterId];
-      if (childData) {
-        // Mark the cluster node itself as expanded
-        currentNodes = currentNodes.map((n) =>
-          n.id === clusterId
-            ? { ...n, data: { ...n.data, is_expanded: true } }
-            : n
-        );
-        // Append expanded child nodes and edges
-        currentNodes = [...currentNodes, ...childData.nodes];
-        currentEdges = [...currentEdges, ...childData.edges];
-      }
-    });
-
-    // Apply search and filter dimming
+  // Apply search query and tier/reachability filters to dim non-matching nodes
+  const displayNodes = useMemo(() => {
     const lowerQuery = searchQuery.trim().toLowerCase();
     const hasActiveFilter = lowerQuery !== "" || tierFilter !== "ALL" || reachabilityFilter !== "ALL";
 
-    const filteredNodes = currentNodes.map((node) => {
+    return nodes.map((node) => {
       if (!hasActiveFilter) {
         return { ...node, data: { ...node.data, is_dimmed: false } };
       }
@@ -140,9 +199,7 @@ export const App: React.FC = () => {
         },
       };
     });
-
-    return { displayNodes: filteredNodes, displayEdges: currentEdges };
-  }, [scenario, expandedClusters, searchQuery, tierFilter, reachabilityFilter]);
+  }, [nodes, searchQuery, tierFilter, reachabilityFilter]);
 
   // Target safe patch versions for demo packages
   const getSuggestedFix = (pkg: GraphNodeSummary) => {
@@ -278,7 +335,7 @@ export const App: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Deterministic Risk Visualizer &amp; Autonomous Remediation
+              Interactive Dependency Graph &amp; Autonomous Remediation
             </p>
           </div>
         </div>
@@ -329,6 +386,14 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => refreshLayout(layoutDirection, expandedClusters)}
+              title="Auto-organize tree layout"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[11px] text-slate-200 transition-colors flex items-center gap-1"
+            >
+              <span>🔄</span>
+              <span>Re-Layout</span>
+            </button>
             <button
               onClick={handleExportSBOM}
               title="Export CycloneDX JSON SBOM"
@@ -444,15 +509,19 @@ export const App: React.FC = () => {
         <main className="flex-1 h-full w-full relative">
           <DependencyGraphCanvas
             nodes={displayNodes}
-            edges={displayEdges}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
             onSelectPackage={setSelectedPackage}
             onToggleCluster={handleToggleCluster}
+            onLayoutDirectionChange={handleLayoutDirectionChange}
+            layoutDirection={layoutDirection}
             className="w-full h-full"
           />
         </main>
 
         {/* Selected Package Details Side Drawer */}
-        <aside className="w-84 bg-slate-900 border-l border-slate-800 p-5 flex flex-col gap-4 shrink-0 overflow-y-auto w-[340px]">
+        <aside className="bg-slate-900 border-l border-slate-800 p-5 flex flex-col gap-4 shrink-0 overflow-y-auto w-[340px]">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-xs font-semibold tracking-wide uppercase text-slate-400">
               Telemetry &amp; Remediation
@@ -597,7 +666,7 @@ export const App: React.FC = () => {
                     <span>Clean Dependencies Aggregate Cluster</span>
                   </div>
                   <p className="text-[11px] text-emerald-400 leading-relaxed">
-                    Click the cluster box on the canvas to expand into {selectedPackage.aggregated_count} individual verified clean sub-nodes.
+                    Click the cluster box on the canvas to expand into {selectedPackage.aggregated_count} individual verified clean sub-nodes arranged cleanly below in the tree hierarchy.
                   </p>
                 </div>
               )}
@@ -609,8 +678,9 @@ export const App: React.FC = () => {
           )}
 
           <div className="mt-auto pt-4 border-t border-slate-800 text-[11px] text-slate-500 space-y-1">
-            <p>💡 <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">Tab</kbd> + <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">Enter</kbd> to navigate nodes.</p>
-            <p>🖱️ Drag canvas to pan; scroll to zoom.</p>
+            <p>💡 Click and drag any node to reposition it freely.</p>
+            <p>🔄 Click &ldquo;Re-Layout&rdquo; to reset to neat tree alignment.</p>
+            <p>⌨️ <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">Tab</kbd> + <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-300 font-mono">Enter</kbd> to navigate nodes.</p>
           </div>
         </aside>
       </div>

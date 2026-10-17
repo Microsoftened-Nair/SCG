@@ -18,6 +18,9 @@ import {
   Edge,
   NodeProps,
   NodeTypes,
+  OnNodesChange,
+  OnEdgesChange,
+  Panel,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -97,6 +100,9 @@ export const NodeClusterToggleContext = createContext<
 export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> = ({
   id,
   data,
+  selected,
+  targetPosition = Position.Top,
+  sourcePosition = Position.Bottom,
 }) => {
   const onSelectPackage = useContext(NodeSelectionContext);
   const onToggleCluster = useContext(NodeClusterToggleContext);
@@ -123,6 +129,9 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
 
   const isDimmed = Boolean(data.is_dimmed);
   const dimClass = isDimmed ? "opacity-25 filter grayscale" : "opacity-100";
+  const selectedClass = selected
+    ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 shadow-2xl scale-[1.02]"
+    : "hover:shadow-lg";
 
   // Handle collapsed / expanded aggregate cluster
   if (data.is_aggregate_cluster) {
@@ -137,26 +146,33 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
         role="button"
         tabIndex={0}
         aria-label={clusterAriaLabel}
-        className={`px-4 py-2.5 rounded-lg border-dashed border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold text-xs tracking-wide shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all select-none ${dimClass}`}
+        className={`w-[240px] px-4 py-3 rounded-xl border-dashed border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold text-xs tracking-wide shadow-md hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-grab active:cursor-grabbing transition-all select-none ${selectedClass} ${dimClass}`}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
       >
         <Handle
           type="target"
-          position={Position.Top}
-          className="w-2.5 h-2.5 bg-emerald-700 border-2 border-white"
+          position={targetPosition}
+          className="!w-3 !h-3 !bg-emerald-700 !border-2 !border-white rounded-full transition-transform hover:scale-125"
         />
-        <div className="flex items-center gap-1.5">
-          <span aria-hidden="true">{isExpanded ? "📂" : "🛡️"}</span>
-          <span>{clusterAriaLabel}</span>
-          <span className="text-[10px] text-emerald-800 ml-1 underline decoration-dotted">
-            {isExpanded ? "(click to collapse)" : "(click to expand)"}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold">
+              <span aria-hidden="true">{isExpanded ? "📂" : "🛡️"}</span>
+              <span>{clusterAriaLabel}</span>
+            </div>
+            <span className="text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded-full font-mono">
+              {clusterCount}
+            </span>
+          </div>
+          <span className="text-[10px] text-emerald-700 font-normal">
+            {isExpanded ? "Click to collapse cluster" : "Click to expand in tree"}
           </span>
         </div>
         <Handle
           type="source"
-          position={Position.Bottom}
-          className="w-2.5 h-2.5 bg-emerald-700 border-2 border-white"
+          position={sourcePosition}
+          className="!w-3 !h-3 !bg-emerald-700 !border-2 !border-white rounded-full transition-transform hover:scale-125"
         />
       </div>
     );
@@ -172,19 +188,20 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
       role="button"
       tabIndex={0}
       aria-label={descriptiveAriaLabel}
-      className={`relative min-w-[200px] max-w-[260px] p-3 rounded-lg shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${styling.border} ${pulseClass} ${dimClass}`}
+      className={`w-[260px] p-3 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 select-none ${styling.border} ${pulseClass} ${selectedClass} ${dimClass}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
       <Handle
         type="target"
-        position={Position.Top}
-        className="w-2.5 h-2.5 bg-slate-600 border-2 border-white"
+        position={targetPosition}
+        className="!w-3 !h-3 !bg-slate-600 !border-2 !border-white rounded-full transition-transform hover:scale-125"
       />
 
+      {/* Header: Icon, Name, and Numeric High-Contrast Badge */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          <span className="text-base select-none" aria-hidden="true">
+        <div className="flex items-center gap-1.5 overflow-hidden flex-1 min-w-0">
+          <span className="text-base select-none shrink-0" aria-hidden="true">
             {styling.icon}
           </span>
           <span
@@ -196,34 +213,41 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
         </div>
         {/* Numeric score badge as text with verified high contrast */}
         <span
-          className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold tracking-tight shadow-sm ${styling.badge}`}
+          className={`shrink-0 px-2 py-0.5 rounded-md text-xs font-black tracking-tight shadow-sm ${styling.badge}`}
           aria-label={`Score ${data.composite_score}`}
         >
           {data.composite_score}
         </span>
       </div>
 
-      <div className="text-xs space-y-0.5 opacity-90">
+      {/* Details Meta */}
+      <div className="text-xs space-y-1">
         <div className="flex justify-between items-center text-[11px]">
-          <span className="font-medium text-slate-600">v{data.version}</span>
-          <span className="font-semibold uppercase tracking-wider text-[10px]">
+          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/10 text-slate-800">
+            v{data.version}
+          </span>
+          <span className="font-bold uppercase tracking-wider text-[10px] opacity-90">
             {data.risk_tier}
           </span>
         </div>
-        <div className="text-[11px] truncate text-slate-700">
-          Reachability: <span className="font-medium">{data.reachability}</span>
+
+        <div className="text-[11px] truncate flex items-center gap-1 opacity-90" title={data.reachability}>
+          <span className="text-slate-500 text-[10px]">Reach:</span>
+          <span className="font-medium truncate">{data.reachability}</span>
         </div>
+
         {data.vuln_count > 0 && (
-          <div className="text-[11px] font-semibold text-rose-800">
-            {data.vuln_count} {data.vuln_count === 1 ? "Vulnerability" : "Vulnerabilities"}
+          <div className="text-[10px] font-bold text-rose-900 bg-rose-100/80 px-1.5 py-0.5 rounded flex items-center justify-between border border-rose-300">
+            <span>⚠️ {data.vuln_count} {data.vuln_count === 1 ? "Advisory" : "Advisories"}</span>
+            <span className="underline decoration-dotted text-[9px]">Fix Available</span>
           </div>
         )}
       </div>
 
       <Handle
         type="source"
-        position={Position.Bottom}
-        className="w-2.5 h-2.5 bg-slate-600 border-2 border-white"
+        position={sourcePosition}
+        className="!w-3 !h-3 !bg-slate-600 !border-2 !border-white rounded-full transition-transform hover:scale-125"
       />
     </div>
   );
@@ -232,20 +256,28 @@ export const AccessiblePackageNode: React.FC<NodeProps<Node<GraphNodeSummary>>> 
 export interface DependencyGraphCanvasProps {
   nodes: Node<GraphNodeSummary>[];
   edges: Edge[];
+  onNodesChange?: OnNodesChange<Node<GraphNodeSummary>>;
+  onEdgesChange?: OnEdgesChange;
   onSelectPackage?: (node: GraphNodeSummary) => void;
   onToggleCluster?: (clusterId: string) => void;
+  onLayoutDirectionChange?: (dir: "TB" | "LR") => void;
+  layoutDirection?: "TB" | "LR";
   className?: string;
 }
 
 /**
  * DependencyGraphCanvas component wrapping ReactFlow with accessible node rendering,
- * custom minimap colors, and keyboard accessibility.
+ * custom minimap colors, drag-and-drop node positioning, and automatic layout.
  */
 export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
   nodes,
   edges,
+  onNodesChange,
+  onEdgesChange,
   onSelectPackage,
   onToggleCluster,
+  onLayoutDirectionChange,
+  layoutDirection = "TB",
   className = "w-full h-[600px]",
 }) => {
   const nodeTypes: NodeTypes = useMemo(
@@ -281,8 +313,13 @@ export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
             fitView
+            nodesDraggable={true}
+            nodesConnectable={false}
+            elementsSelectable={true}
             onNodeClick={(_event, node) => {
               if (node.data && onSelectPackage) {
                 onSelectPackage(node.data as GraphNodeSummary);
@@ -290,9 +327,42 @@ export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
             }}
             aria-label="Software Dependency Risk Graph"
           >
-            <Background color="#94a3b8" gap={16} />
-            <Controls />
+            <Background color="#334155" gap={20} size={1.5} />
+            <Controls className="!bg-slate-900 !border-slate-800 !text-slate-200 !shadow-xl [&>button]:!bg-slate-900 [&>button]:!border-slate-800 [&>button]:!text-slate-200 hover:[&>button]:!bg-slate-800" />
+
+            {/* Layout Direction Toggle Panel */}
+            {onLayoutDirectionChange && (
+              <Panel position="top-right" className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1.5 rounded-lg shadow-xl backdrop-blur-sm text-xs">
+                <span className="text-slate-400 text-[10px] px-1 font-medium">Layout:</span>
+                <button
+                  type="button"
+                  onClick={() => onLayoutDirectionChange("TB")}
+                  className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                    layoutDirection === "TB"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-300 hover:bg-slate-800"
+                  }`}
+                  title="Top-to-Bottom Hierarchical Tree"
+                >
+                  Vertical (TB)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLayoutDirectionChange("LR")}
+                  className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                    layoutDirection === "LR"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-300 hover:bg-slate-800"
+                  }`}
+                  title="Left-to-Right Hierarchical Tree"
+                >
+                  Horizontal (LR)
+                </button>
+              </Panel>
+            )}
+
             <MiniMap
+              className="!bg-slate-900/90 !border !border-slate-800 !rounded-lg !shadow-xl"
               nodeColor={(node) => {
                 const summary = node.data as GraphNodeSummary | undefined;
                 if (summary?.risk_tier) {
@@ -300,7 +370,7 @@ export const DependencyGraphCanvas: React.FC<DependencyGraphCanvasProps> = ({
                 }
                 return "#64748b";
               }}
-              nodeStrokeWidth={3}
+              nodeStrokeWidth={2}
               zoomable
               pannable
             />
